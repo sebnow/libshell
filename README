@@ -1,0 +1,37 @@
+Shell Library
+=============
+
+The intent of this library is to provide an IEEE Std 1003.1 compliant
+Shell parser. The library does not execute, nor interpret, Shell code.
+It merely parses tokens, delegating intepretation to the caller.
+
+
+Installing
+==========
+
+If the source code has been downloaded from the repository, the
+`./autogen.sh` script needs to be run to bootstrap the build system. If
+downloaded from a distribution archive, this is not necessary.
+
+The library is built using the typical UNIX procedure:
+
+    ./configure
+    make
+    make install
+
+For developers, the `make check` and `make prove` targets will also be
+useful. The latter compiles unit tests and runs the `prove` command
+(from the Test::Harness Perl module) providing a summary of the test
+results.
+
+
+Documentation
+=============
+
+Documentation is generated directly from the source code using Doxygen.
+In order to generate this documentation simply run `doxygen` in the
+build directory. It will create a "documentation" directory, which will
+contain all the documentation.
+
+A copy of this documentation is not yet available on the world wide web.
+

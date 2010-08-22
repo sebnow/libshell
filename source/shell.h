@@ -154,7 +154,7 @@ struct sh_scanner {
 	/** Buffer for input. */
 	struct sh_buffer *buffer;
 	/** Container for callbacks used by the scanner */
-	struct sh_scanner_callbacks *cb;
+	struct sh_scanner_callbacks cb;
 	/** User-supplied data to be passed when scan_callback is called. */
 	void *user_data;
 };

@@ -84,8 +84,8 @@
 
 	main := |*
 		assignment => {
-			if(scanner->cb->assign != NULL) {
-				scanner->cb->assign(asmt_name, &asmt_value, scanner->user_data);
+			if(scanner->cb.assign != NULL) {
+				scanner->cb.assign(asmt_name, &asmt_value, scanner->user_data);
 			}
 			free(asmt_name);
 			if(asmt_value.type == sh_value_type_scalar && asmt_value.scalar) {
@@ -113,7 +113,7 @@ int sh_scanner_init(struct sh_scanner *scanner, struct sh_scanner_callbacks *cb,
 	memset(scanner, 0, sizeof(*scanner));
 	scanner->line = 1;
 	scanner->column = 1;
-	scanner->cb = cb;
+	memcpy(&scanner->cb, cb, sizeof(*cb));
 	scanner->user_data = ctx;
 	scanner->buffer = malloc(sizeof(*scanner->buffer));
 	if(scanner->buffer == NULL) {
@@ -152,7 +152,7 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 
 	/* Get more input if required */
 	if(is_input_exhausted(scanner)) {
-		input = scanner->cb->scan(scanner->user_data);
+		input = scanner->cb.scan(scanner->user_data);
 		/* There is nothing left to scan. */
 		if(input == NULL) {
 			scanner->eof = scanner->pe;

@@ -10,6 +10,14 @@ AC_CONFIG_HEADERS([source/config.h])
 AC_CONFIG_FILES([Makefile Doxyfile])
 
 dnl
+dnl Debugging support
+dnl
+AC_ARG_ENABLE([debug],
+	AS_HELP_STRING([--enable-debug], [compile with debugging support]),
+	[debug=$enableval], [debug=no])
+AM_CONDITIONAL([ENABLE_DEBUG], test "x$debug" = "xyes")
+
+dnl
 dnl Library versioning
 dnl
 AC_SUBST([SH_CURRENT], 0)

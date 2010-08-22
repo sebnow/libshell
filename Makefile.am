@@ -2,7 +2,15 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = autogen.sh
 
 RAGEL ?= ragel
-AM_CFLAGS = -I@srcdir@/source -Wall -Wextra -Werror -g
+AM_CFLAGS = -I@srcdir@/source -Wall -Wextra
+
+if ENABLE_DEBUG
+	AM_CFLAGS += -Werror -DSH_DEBUG -g
+# Some extra warnings
+	AM_CFLAGS += -Wpointer-arith -Wstrict-prototypes -Wfloat-equal -Wshadow \
+		-Wwrite-strings -Wbad-function-cast -Wcast-align -Wcast-qual \
+		-Wdeclaration-after-statement -Wuninitialized
+endif
 
 #
 # Library

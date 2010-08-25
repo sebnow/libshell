@@ -16,7 +16,7 @@ endif
 # Library
 #
 lib_LTLIBRARIES = libshell.la
-libshell_la_SOURCES = source/buffer.c source/scanner.c
+libshell_la_SOURCES = source/scanner.c
 # Prevent "created with both libtool and without" errors for tests. This
 # doesn't actually do anything.
 libshell_la_CFLAGS = $(AM_CFLAGS)
@@ -29,11 +29,8 @@ include_HEADERS = source/shell.h
 #
 # Unit tests
 #
-check_PROGRAMS = test/test_buffer.t test/test_scanner.t
-test_test_buffer_t_SOURCES = test/test_buffer.c source/buffer.c
-test_test_buffer_t_LDFLAGS = -ltap
-test_test_scanner_t_SOURCES = test/test_scanner.c source/scanner.c \
-	source/buffer.c
+check_PROGRAMS = test/test_scanner.t
+test_test_scanner_t_SOURCES = test/test_scanner.c source/scanner.c
 test_test_scanner_t_LDFLAGS = -ltap
 
 TESTS = $(check_PROGRAMS)

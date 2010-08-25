@@ -24,9 +24,9 @@
 #include <string.h>
 
 #include "shell.h"
-
-#include "buffer.h"
 #include "util.h"
+
+#define SH_BUFFER_SIZE 4096
 
 %%{
 	machine Shell;
@@ -115,15 +115,11 @@ int sh_scanner_init(struct sh_scanner *scanner, struct sh_scanner_callbacks *cb,
 	scanner->column = 1;
 	memcpy(&scanner->cb, cb, sizeof(*cb));
 	scanner->user_data = ctx;
-	scanner->buffer = malloc(sizeof(*scanner->buffer));
+	scanner->buffer = g_string_sized_new(SH_BUFFER_SIZE);
 	if(scanner->buffer == NULL) {
 		return 1;
 	}
-	memset(scanner->buffer, 0, sizeof(*scanner->buffer));
-	if(sh_buffer_init(scanner->buffer, 0) != 0) {
-		return 1;
-	}
-	scanner->p = scanner->pe = sh_buffer_data(scanner->buffer);
+	scanner->p = scanner->pe = scanner->buffer->str;
 	%% write init;
 	return 0;
 }
@@ -133,10 +129,10 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 {
 	enum sh_scan_status status;
 	char *input = NULL;
-	struct sh_buffer *buf = scanner->buffer;
 	char *asmt_name;
 	struct sh_value asmt_value;
 	char *mark = NULL;
+	GString *buf = scanner->buffer;
 
 	assert(scanner);
 	assert(scanner->buffer);
@@ -146,8 +142,7 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 	memset(&asmt_value, 0, sizeof(asmt_value));
 
 	if(scanner->ts != NULL) {
-		assert(sh_buffer_data(buf) <= scanner->ts);
-		assert(scanner->ts < sh_buffer_data(buf) + sh_buffer_length(buf));
+		assert(buf->str <= scanner->ts && scanner->ts <= buf->str + buf->len);
 	}
 
 	/* Get more input if required */
@@ -158,16 +153,16 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 			scanner->eof = scanner->pe;
 		} else {
 			/* Free some space if capacity is low */
-			if(strlen(input) + sh_buffer_length(buf) > sh_buffer_capacity(buf)) {
-				sh_buffer_consume(buf, scanner->ts - sh_buffer_data(buf), NULL);
+			if(scanner->ts && strlen(input) + buf->len > buf->allocated_len) {
+				g_string_erase(buf, 0, scanner->ts - buf->str);
 			}
 			/* The scanner state needs to be reset with the new information. */
-			sh_buffer_append(buf, input);
-			scanner->p = sh_buffer_data(buf);
-			scanner->pe = scanner->p + sh_buffer_length(buf);
+			g_string_append(buf, input);
+			scanner->p = buf->str;
+			scanner->pe = scanner->p + buf->len;
 			/* "Shift" over the token */
-			scanner->te = sh_buffer_data(buf) + (scanner->te - scanner->ts);
-			scanner->ts = sh_buffer_data(buf);
+			scanner->te = buf->str + (scanner->te - scanner->ts);
+			scanner->ts = buf->str;
 		}
 	}
 	%% write exec;
@@ -183,7 +178,7 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 
 SH_SYMEXPORT
 void sh_scanner_release(struct sh_scanner *scanner) {
-	sh_buffer_release(scanner->buffer);
+	g_string_free(scanner->buffer, TRUE);
 }
 
 static inline int is_input_exhausted(struct sh_scanner *scanner)

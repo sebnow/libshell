@@ -32,6 +32,10 @@ gl_VISIBILITY
 AM_CONDITIONAL(HAVE_VISIBILITY, test "$HAVE_VISIBILITY" = "1")
 
 AC_TYPE_SIZE_T
+PKG_CHECK_MODULES([glib], [glib-2.0], ,
+	AC_MSG_ERROR([unable to find glib library]))
+CFLAGS="$CFLAGS $glib_CFLAGS"
+LIBS="$LIBS $glib_LIBS"
 
 AC_OUTPUT
 

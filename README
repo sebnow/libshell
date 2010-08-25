@@ -6,6 +6,14 @@ Shell parser. The library does not execute, nor interpret, Shell code.
 It merely parses tokens, delegating intepretation to the caller.
 
 
+Requirements
+============
+
+This library depends on the following:
+
+ * Glib >= 2.0
+
+
 Installing
 ==========
 

@@ -22,8 +22,7 @@
 #ifndef SH_SHELL_H
 #define SH_SHELL_H
 
-/* Forward declaration. Defined in buffer.h. */
-struct sh_buffer;
+#include <glib.h>
 
 /** \file shell.h
  * Header exporting the public interface of the library.
@@ -152,7 +151,7 @@ struct sh_scanner {
 	/** Current column number being scanned. */
 	unsigned int column;
 	/** Buffer for input. */
-	struct sh_buffer *buffer;
+	GString *buffer;
 	/** Container for callbacks used by the scanner */
 	struct sh_scanner_callbacks cb;
 	/** User-supplied data to be passed when scan_callback is called. */

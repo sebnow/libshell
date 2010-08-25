@@ -169,11 +169,11 @@ int main()
 	plan_tests(NTESTS);
 
 	test_init(&cb);
+	test_assign_null(&cb);
 	test_assign_string(&cb);
 
 	/* TODO: */
 	todo_start("%s", "Not implemented");
-	test_assign_null(&cb);
 	test_assign_number(&cb);
 	test_assign_array(&cb);
 	todo_end();

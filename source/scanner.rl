@@ -77,8 +77,9 @@
 
 	partial_string = '"' (extend - '"' | '\\' . extend - '"')* '"';
 	string = "'" (extend - "'")* "'";
+	number = [+\-]? [0-9]+ ('.' [0-9]+)?;
 
-	scalar = string | partial_string;
+	scalar = string | partial_string | number;
 
 	assignment = word >mark %set_name '=' (scalar >mark %assign_scalar)* terminator;
 

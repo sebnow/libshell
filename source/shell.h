@@ -138,7 +138,7 @@ enum sh_scan_status {
 	/** Scanning is still in progress (EOF hasn't been reached). */
 	sh_scan_in_progress,
 	/** An error occurred during scanning. */
-	sh_scan_error,
+	sh_scan_error
 };
 
 /** Initialise a scanner for use.

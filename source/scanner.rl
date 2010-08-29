@@ -102,10 +102,11 @@
  * \param scanner The scanner to be checked.
  * \return True on success, false otherwise.
  * */
-static int is_input_exhausted(struct sh_scanner *);
+static int is_input_exhausted(struct sh_scanner const*);
 
 SH_SYMEXPORT
-int sh_scanner_init(struct sh_scanner *scanner, struct sh_scanner_callbacks *cb, void *ctx)
+int sh_scanner_init(struct sh_scanner *scanner,
+	struct sh_scanner_callbacks const *cb, void *ctx)
 {
 	if(scanner == NULL || cb == NULL) {
 		return 1;
@@ -133,7 +134,7 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 	char *asmt_value = NULL;
 	char *mark = NULL;
 	char *mark_end = NULL;
-	GString *buf = scanner->buffer;
+	GString *const buf = scanner->buffer;
 
 	assert(scanner);
 	assert(scanner->buffer);
@@ -178,7 +179,7 @@ void sh_scanner_release(struct sh_scanner *scanner) {
 	g_string_free(scanner->buffer, TRUE);
 }
 
-static inline int is_input_exhausted(struct sh_scanner *scanner)
+static inline int is_input_exhausted(struct sh_scanner const *scanner)
 {
 	return scanner->p == scanner->pe;
 }

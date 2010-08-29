@@ -20,7 +20,7 @@ char *get_input(void *ctx)
 	}
 }
 
-void assign(char *name, char *value, void *ctx) {
+void assign(char const *name, char const *value, void *ctx) {
 	char **ptr;
 	printf("%s = %s\n", name, value);
 }

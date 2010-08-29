@@ -39,8 +39,8 @@ char *scan_cb(void *data) {
 	return d->input;
 }
 
-void assign_cb(char *name, char *value, void *data) {
-	struct udata *d = data;
+void assign_cb(char const *name, char const *value, void *data) {
+	struct udata *const d = data;
 	d->last_name = NULL;
 	d->last_value = NULL;
 	if(name != NULL) {
@@ -57,7 +57,7 @@ void assign_cb(char *name, char *value, void *data) {
 	}
 }
 
-void test_init(struct sh_scanner_callbacks *cb)
+void test_init(struct sh_scanner_callbacks const *cb)
 {
 	struct sh_scanner scnr;
 	ok(sh_scanner_init(&scnr, cb, NULL) == 0, "Given a scanner, when "
@@ -68,7 +68,7 @@ void test_init(struct sh_scanner_callbacks *cb)
 	sh_scanner_release(&scnr);
 }
 
-void test_assign_null(struct sh_scanner_callbacks *cb)
+void test_assign_null(struct sh_scanner_callbacks const *cb)
 {
 	struct sh_scanner scnr;
 	struct udata data;
@@ -88,7 +88,7 @@ void test_assign_null(struct sh_scanner_callbacks *cb)
 	free(data.last_name);
 }
 
-void test_assign_string(struct sh_scanner_callbacks *cb)
+void test_assign_string(struct sh_scanner_callbacks const *cb)
 {
 	struct sh_scanner scnr;
 	struct udata data;

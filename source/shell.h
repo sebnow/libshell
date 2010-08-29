@@ -88,7 +88,7 @@ typedef char *(*sh_scan_func)(void *);
  * \param value Value to be assigned.
  * \param user_data User-specified data, set in sh_scanner_init().
  */
-typedef void (*sh_assign_func)(char *, char *, void *);
+typedef void (*sh_assign_func)(char const*, char const*, void *);
 
 /** \} */
 
@@ -157,12 +157,8 @@ enum sh_scan_status {
  * \param user_data Data to be passed as a parameter to callbacks.
  * \return 0 on success, 1 otherwise.
  */
-int sh_scanner_init(struct sh_scanner *, struct sh_scanner_callbacks *, void *);
-
-/** Release any resources used by the scanner.
- * \param scanner Scanner to be released.
- */
-void sh_scanner_release(struct sh_scanner *);
+int sh_scanner_init(struct sh_scanner *,
+	struct sh_scanner_callbacks const *, void *);
 
 /** Scan for another token using \c scan_callback for input.
  *

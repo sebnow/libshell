@@ -41,7 +41,7 @@
 
 	action set_name {
 		if(mark != NULL) {
-			asmt_name = malloc(sizeof(*asmt_name) * (fpc - mark));
+			asmt_name = malloc(sizeof(*asmt_name) * (fpc - mark + 1));
 			strncpy(asmt_name, mark, fpc - mark);
 			asmt_name[fpc - mark] = '\0';
 			/* Default to a null/empty assignment */
@@ -63,7 +63,7 @@
 				mark++;
 				mark_end--;
 			}
-			asmt_value.scalar = malloc(sizeof(*asmt_value.scalar) * (mark_end - mark));
+			asmt_value.scalar = malloc(sizeof(*asmt_value.scalar) * (mark_end - mark + 1));
 			strncpy(asmt_value.scalar, mark, mark_end - mark);
 			asmt_value.scalar[mark_end - mark] = '\0';
 			mark = NULL;

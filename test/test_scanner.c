@@ -39,8 +39,10 @@ void test_init(struct sh_scanner_callbacks *cb)
 	struct sh_scanner scnr;
 	ok(sh_scanner_init(&scnr, cb, NULL) == 0, "Given a scanner, when "
 		"callbacks are provided, then initialising should succeed");
+	sh_scanner_release(&scnr);
 	ok(sh_scanner_init(&scnr, NULL, NULL) != 0, "Given a scanner, when "
 		"callbacks are not provided, then initialising should fail");
+	sh_scanner_release(&scnr);
 }
 
 void test_assign_null(struct sh_scanner_callbacks *cb)

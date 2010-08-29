@@ -84,6 +84,8 @@
 		(assignment_value >mark %assign_value)?
 		terminator;
 
+	comment = '#' whitespace* (any - '\n')+ >mark whitespace* '\n';
+
 	main := |*
 		assignment => {
 			if(scanner->cb.assign != NULL) {
@@ -92,6 +94,19 @@
 			free(asmt_name);
 			free(asmt_value);
 			fbreak;
+		};
+		comment => {
+			if(mark != NULL && scanner->cb.comment != NULL) {
+				
+				str = malloc(sizeof(*str) * (fpc - mark + 1));
+				strncpy(str, mark, fpc - mark);
+				str[fpc - mark] = '\0';
+				scanner->cb.comment(str, scanner->user_data);
+				free(str);
+				str = NULL;
+				mark = NULL;
+				fbreak;
+			}
 		};
 		[ \t\r\n];
 		0 => { scanner->done = 1; fbreak; };
@@ -134,6 +149,7 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 	char *asmt_value = NULL;
 	char *mark = NULL;
 	char *mark_end = NULL;
+	char *str = NULL;
 	GString *const buf = scanner->buffer;
 
 	assert(scanner);

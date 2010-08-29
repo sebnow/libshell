@@ -64,6 +64,8 @@
  * Callbacks are used to delegate various actions, such as retrieving
  * more input for scanning, or intepreting parsed tokens.
  *
+ * Memory referenced by arguments passed to the callback function is not
+ * guaranteed to be valid outside the scope of the function.
  * \{
  */
 
@@ -80,15 +82,17 @@ typedef char *(*sh_scan_func)(void *);
 
 /** Callback function called when an asignment occurs.
  *
- * The \c name and \c value should be copied. Validity of the
- * memory pointed to be these pointers is undefined after the callback
- * is executed.
  *
  * \param name Name of the assigned variable.
  * \param value Value to be assigned.
  * \param user_data User-specified data, set in sh_scanner_init().
  */
 typedef void (*sh_assign_func)(char const*, char const*, void *);
+
+/** Callback function called when a comment is parsed.
+ * \param comment Content of the comment.
+ */
+typedef void (*sh_comment_func)(char const*, void *);
 
 /** \} */
 
@@ -98,6 +102,8 @@ struct sh_scanner_callbacks {
 	sh_scan_func scan;
 	/** Callback function notifying of assignment. */
 	sh_assign_func assign;
+	/** Callback function notifying of a comment. */
+	sh_comment_func comment;
 };
 
 /** A structure containing the state of the scanner. */

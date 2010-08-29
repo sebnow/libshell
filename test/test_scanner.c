@@ -25,12 +25,13 @@
 #include <tap.h>
 #include <shell.h>
 
-#define NTESTS 14
+#define NTESTS 16
 
 struct udata {
 	char *input;
 	char *last_name;
 	char *last_value;
+	char *last_comment;
 };
 
 /* A string is used for the input, so it can be simply returned. */
@@ -53,6 +54,18 @@ void assign_cb(char const *name, char const *value, void *data) {
 		d->last_value = malloc(sizeof(*d->last_value) * strlen(value) + 1);
 		if(d->last_value != NULL) {
 			strcpy(d->last_value, value);
+		}
+	}
+}
+
+void comment_cb(char const *comment, void *data)
+{
+	struct udata *const d = data;
+	d->last_comment = NULL;
+	if(comment != NULL) {
+		d->last_comment = malloc(sizeof(*d->last_comment) * strlen(comment) + 1);
+		if(d->last_comment != NULL) {
+			strcpy(d->last_comment, comment);
 		}
 	}
 }
@@ -127,17 +140,39 @@ void test_assign_string(struct sh_scanner_callbacks const *cb)
 	sh_scanner_release(&scnr);
 }
 
+void test_comment(struct sh_scanner_callbacks const *cb)
+{
+	struct sh_scanner scnr;
+	struct udata data;
+
+	memset(&data, 0, sizeof(data));
+	data.input = "# Hello world!\n";
+	sh_scanner_init(&scnr, cb, &data);
+
+	ok(sh_scan(&scnr) == sh_scan_in_progress,
+		"Given a comment, scanning should succeed", "");
+	ok(data.last_comment && strcmp(data.last_comment, "Hello world!") == 0,
+		"Given a comment, the content should be parsed", "");
+	free(data.last_comment);
+
+	sh_scanner_release(&scnr);
+}
+
 int main()
 {
 	struct sh_scanner_callbacks cb;
+	memset(&cb, 0, sizeof(cb));
+
 	cb.scan = scan_cb;
 	cb.assign = assign_cb;
+	cb.comment = comment_cb;
 
 	plan_tests(NTESTS);
 
 	test_init(&cb);
 	test_assign_null(&cb);
 	test_assign_string(&cb);
+	test_comment(&cb);
 
 	return exit_status();
 }

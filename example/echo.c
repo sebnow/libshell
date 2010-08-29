@@ -30,6 +30,7 @@ int main(int argc, char **argv)
 	struct input data;
 	struct sh_scanner scanner;
 	struct sh_scanner_callbacks cb;
+	enum sh_scan_status status;
 
 	/* First argument should be a shell script. */
 	if(argc != 2) {
@@ -43,11 +44,15 @@ int main(int argc, char **argv)
 	cb.scan = get_input;
 	cb.assign = assign;
 	sh_scanner_init(&scanner, &cb, &data);
-	if(sh_scan(&scanner) == sh_scan_error) {
-		fprintf(stderr, "Error during parsing\n");
-		return 1;
+	do {
+		status = sh_scan(&scanner);
+	} while(status == sh_scan_in_progress);
+
+	if(status == sh_scan_error) {
+		fprintf(stderr, "Error parsing!\n");
 	}
+
 	sh_scanner_release(&scanner);
-	return 0;
+	return status == sh_scan_error;
 }
 

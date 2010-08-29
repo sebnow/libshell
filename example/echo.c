@@ -20,18 +20,9 @@ char *get_input(void *ctx)
 	}
 }
 
-void assign(char *name, struct sh_value *value, void *ctx) {
+void assign(char *name, char *value, void *ctx) {
 	char **ptr;
-	if(value && value->type == sh_value_type_scalar) {
-		printf("%s = %s\n", name, value->scalar);
-	} else if(value && *value->array) {
-		ptr = value->array;
-		printf("%s = (%s\n", name, *ptr);
-		for(ptr++; *ptr != NULL; ptr++) {
-			printf(", %s", *ptr);
-		}
-		printf(")\n");
-	}
+	printf("%s = %s\n", name, value);
 }
 
 int main(int argc, char **argv)

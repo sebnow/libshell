@@ -60,33 +60,6 @@
  * \{
  */
 
-/** Enumeration indicating the type of a shell value.
- * \see sh_value
- */
-enum sh_value_type {
-	/** Non-array values (numbers, strings, etc). */
-	sh_value_type_scalar,
-	/** Array values. */
-	sh_value_type_array,
-};
-
-/** Structure representing a shell value.
- * A value can be of type scalar or array. This structure
- * encapsulates both types.
- */
-struct sh_value {
-	/** Type of the value */
-	enum sh_value_type type;
-	union {
-		/** When type is sh_value_type_scalar, this will contain the scalar. */
-		char *scalar;
-		/** When type is sh_value_type_array, this will contain a \c
-		 * NULL terminated array.
-		 */
-		char **array;
-	};
-};
-
 /** \defgroup callbacks Callbacks
  * Callbacks are used to delegate various actions, such as retrieving
  * more input for scanning, or intepreting parsed tokens.
@@ -115,7 +88,7 @@ typedef char *(*sh_scan_func)(void *);
  * \param value Value to be assigned.
  * \param user_data User-specified data, set in sh_scanner_init().
  */
-typedef void (*sh_assign_func)(char *, struct sh_value *, void *);
+typedef void (*sh_assign_func)(char *, char *, void *);
 
 /** \} */
 

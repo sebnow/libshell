@@ -45,53 +45,52 @@
 			strncpy(asmt_name, mark, fpc - mark);
 			asmt_name[fpc - mark] = '\0';
 			/* Default to a null/empty assignment */
-			asmt_value.type = sh_value_type_scalar;
-			asmt_value.scalar = NULL;
+			asmt_value = NULL;
 			mark = NULL;
 		}
 	}
 
-	action assign_scalar {
-		char *mark_end = fpc;
+	action assign_value {
 		if(mark != NULL) {
-			asmt_value.type = sh_value_type_scalar;
 			/* Ignore quotes.
 			 * TODO: Different quotes will have to be interpreted
 			 * differently (e.g. interpolation)
 			 */
+			mark_end = fpc;
 			if(*mark == '\'' || *mark == '"') {
 				mark++;
 				mark_end--;
 			}
-			asmt_value.scalar = malloc(sizeof(*asmt_value.scalar) * (mark_end - mark + 1));
-			strncpy(asmt_value.scalar, mark, mark_end - mark);
-			asmt_value.scalar[mark_end - mark] = '\0';
+			asmt_value = malloc(sizeof(*asmt_value) * (mark_end - mark + 1));
+			strncpy(asmt_value, mark, mark_end - mark);
+			asmt_value[mark_end - mark] = '\0';
 			mark = NULL;
+			mark_end = NULL;
 		}
 	}
 
 	whitespace = space - [\n];
 
-	word = (alpha | '_') (alnum | '_')*;
+	name = (alpha | '_') (alnum | '_')*;
 	terminator = [\n;];
 
 	partial_string = '"' (extend - '"' | '\\' . extend - '"')* '"';
 	string = "'" (extend - "'")* "'";
 	number = [+\-]? [0-9]+ ('.' [0-9]+)?;
 
-	scalar = string | partial_string | number;
+	assignment_value = string | partial_string | number;
 
-	assignment = word >mark %set_name '=' (scalar >mark %assign_scalar)* terminator;
+	assignment = name >mark %set_name '='
+		(assignment_value >mark %assign_value)?
+		terminator;
 
 	main := |*
 		assignment => {
 			if(scanner->cb.assign != NULL) {
-				scanner->cb.assign(asmt_name, &asmt_value, scanner->user_data);
+				scanner->cb.assign(asmt_name, asmt_value, scanner->user_data);
 			}
 			free(asmt_name);
-			if(asmt_value.type == sh_value_type_scalar && asmt_value.scalar) {
-				free(asmt_value.scalar);
-			}
+			free(asmt_value);
 			fbreak;
 		};
 		[ \t\r\n];
@@ -130,17 +129,14 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 {
 	enum sh_scan_status status;
 	char *input = NULL;
-	char *asmt_name;
-	struct sh_value asmt_value;
+	char *asmt_name = NULL;
+	char *asmt_value = NULL;
 	char *mark = NULL;
+	char *mark_end = NULL;
 	GString *buf = scanner->buffer;
 
 	assert(scanner);
 	assert(scanner->buffer);
-
-	/* Reset some values between scans */
-	asmt_name = NULL;
-	memset(&asmt_value, 0, sizeof(asmt_value));
 
 	if(scanner->ts != NULL) {
 		assert(buf->str <= scanner->ts && scanner->ts <= buf->str + buf->len);

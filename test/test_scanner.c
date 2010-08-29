@@ -5,7 +5,7 @@
 #include <tap.h>
 #include <shell.h>
 
-#define NTESTS 11
+#define NTESTS 14
 
 struct udata {
 	char *input;
@@ -66,8 +66,17 @@ void test_assign_string(struct sh_scanner_callbacks *cb)
 	struct udata data;
 
 	memset(&data, 0, sizeof(data));
-	data.input = "foo='bar'\n";
+	data.input = "foo='bar'; foo=\"bar\"; foo=bar;";
 	sh_scanner_init(&scnr, cb, &data);
+
+	ok(sh_scan(&scnr) == sh_scan_in_progress,
+		"Given a literal string assignment, scanning should succeed");
+	ok(data.last_name && strcmp(data.last_name, "foo") == 0,
+		"Given a literal string assignment, the name should be parsed");
+	ok(data.last_value != NULL && strcmp(data.last_value, "bar") == 0,
+		"Given a literal string assignment, the value should be parsed");
+	free(data.last_name);
+	free(data.last_value);
 
 	ok(sh_scan(&scnr) == sh_scan_in_progress,
 		"Given a string assignment, scanning should succeed");
@@ -75,31 +84,19 @@ void test_assign_string(struct sh_scanner_callbacks *cb)
 		"Given a string assignment, the name should be parsed");
 	ok(data.last_value != NULL && strcmp(data.last_value, "bar") == 0,
 		"Given a string assignment, the value should be parsed");
-
-	sh_scanner_release(&scnr);
 	free(data.last_name);
 	free(data.last_value);
-}
-
-void test_assign_number(struct sh_scanner_callbacks *cb)
-{
-	struct sh_scanner scnr;
-	struct udata data;
-
-	memset(&data, 0, sizeof(data));
-	data.input = "bar=1\n";
-	sh_scanner_init(&scnr, cb, &data);
 
 	ok(sh_scan(&scnr) == sh_scan_in_progress,
-		"Given a number assignment, scanning should succeed");
-	ok(data.last_name && strcmp(data.last_name, "bar") == 0,
-		"Given a number assignment, the name should be parsed");
-	ok(data.last_value != NULL && strcmp(data.last_value, "1") == 0,
-		"Given a number assignment, the value should be the number");
-
-	sh_scanner_release(&scnr);
+		"Given an unquoted string assignment, scanning should succeed");
+	ok(data.last_name && strcmp(data.last_name, "foo") == 0,
+		"Given an unquoted string assignment, the name should be parsed");
+	ok(data.last_value != NULL && strcmp(data.last_value, "bar") == 0,
+		"Given an unquoted string assignment, the value should be parsed");
 	free(data.last_name);
 	free(data.last_value);
+
+	sh_scanner_release(&scnr);
 }
 
 int main()
@@ -113,7 +110,6 @@ int main()
 	test_init(&cb);
 	test_assign_null(&cb);
 	test_assign_string(&cb);
-	test_assign_number(&cb);
 
 	return exit_status();
 }

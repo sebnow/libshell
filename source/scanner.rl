@@ -76,9 +76,9 @@
 
 	partial_string = '"' (extend - '"' | '\\' . extend - '"')* '"';
 	string = "'" (extend - "'")* "'";
-	number = [+\-]? [0-9]+ ('.' [0-9]+)?;
+	unquoted_string = (extend - whitespace - terminator)+;
 
-	assignment_value = string | partial_string | number;
+	assignment_value = string | partial_string | unquoted_string;
 
 	assignment = name >mark %set_name '='
 		(assignment_value >mark %assign_value)?

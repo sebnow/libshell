@@ -25,13 +25,15 @@
 #include <tap.h>
 #include <shell.h>
 
-#define NTESTS 16
+#define NTESTS 19
 
 struct udata {
 	char *input;
 	char *last_name;
 	char *last_value;
 	char *last_comment;
+	char *last_command;
+	char **last_command_args;
 };
 
 /* A string is used for the input, so it can be simply returned. */
@@ -66,6 +68,19 @@ void comment_cb(char const *comment, void *data)
 		d->last_comment = malloc(sizeof(*d->last_comment) * strlen(comment) + 1);
 		if(d->last_comment != NULL) {
 			strcpy(d->last_comment, comment);
+		}
+	}
+}
+
+void command_cb(char const *command, char const **command_args, void *data)
+{
+	struct udata *const d = data;
+	d->last_command = NULL;
+	d->last_command_args = (char **)command_args;
+	if(command != NULL) {
+		d->last_command = malloc(sizeof(*d->last_command) * strlen(command) + 1);
+		if(d->last_command != NULL) {
+			strcpy(d->last_command, command);
 		}
 	}
 }
@@ -158,6 +173,39 @@ void test_comment(struct sh_scanner_callbacks const *cb)
 	sh_scanner_release(&scnr);
 }
 
+void test_command(struct sh_scanner_callbacks const *cb)
+{
+	struct sh_scanner scnr;
+	struct udata data;
+	char **args;
+	int result;
+
+	memset(&data, 0, sizeof(data));
+	data.input = "echo Hello world\n";
+	sh_scanner_init(&scnr, cb, &data);
+
+	ok(sh_scan(&scnr) == sh_scan_in_progress,
+		"Given a simple command, scanning should succeed", "");
+	ok(data.last_command && strcmp(data.last_command, "echo") == 0,
+		"Given a simple command, the content should be parsed", "");
+	todo_start("Not implemented");
+	args = data.last_command_args;
+	result = 0;
+	if(args != NULL) {
+		result = 1;
+		result = result && *args && strcmp(*args, "Hello");
+		args++;
+		result = result && *args && strcmp(*args, "world");
+		args++;
+		result = result && *args == NULL;
+	}
+	ok(result, "Given a simple command, the arguments should be parsed", "");
+	todo_end();
+	free(data.last_command);
+
+	sh_scanner_release(&scnr);
+}
+
 int main()
 {
 	struct sh_scanner_callbacks cb;
@@ -166,6 +214,7 @@ int main()
 	cb.scan = scan_cb;
 	cb.assign = assign_cb;
 	cb.comment = comment_cb;
+	cb.command = command_cb;
 
 	plan_tests(NTESTS);
 
@@ -173,6 +222,7 @@ int main()
 	test_assign_null(&cb);
 	test_assign_string(&cb);
 	test_comment(&cb);
+	test_command(&cb);
 
 	return exit_status();
 }

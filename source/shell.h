@@ -95,6 +95,13 @@ typedef void (*sh_assign_func)(char const*, char const*, void *);
  */
 typedef void (*sh_comment_func)(char const*, void *);
 
+/** Callback function called when a command is parsed.
+ * \param command Name of the command.
+ * \param args A NULL-terminated array of arguments.
+ * \param user_data User-specified data, set in sh_scanner_init().
+ */
+typedef void (*sh_command_func)(char const*, char const**, void *);
+
 /** \} */
 
 /** Conveniance structure containing all callbacks used by a scanner */
@@ -105,6 +112,8 @@ struct sh_scanner_callbacks {
 	sh_assign_func assign;
 	/** Callback function notifying of a comment. */
 	sh_comment_func comment;
+	/** Callback function notifying of a command. */
+	sh_command_func command;
 };
 
 /** A structure containing the state of the scanner. */

@@ -69,8 +69,28 @@
 		}
 	}
 
+	action set_command {
+		if(mark != NULL) {
+			str = malloc(sizeof(*str) * (fpc - mark + 1));
+			strncpy(str, mark, fpc - mark);
+			str[fpc - mark] = '\0';
+			mark = NULL;
+		}
+	}
+
+	action notify_command {
+		if(str != NULL && scanner->cb.command != NULL) {
+			scanner->cb.command(str, NULL, scanner->user_data);
+			free(str);
+			str = NULL;
+			mark = NULL;
+			fbreak;
+		}
+	}
+
 	whitespace = space - [\n];
 
+	word = ([./] | alnum)+;
 	name = (alpha | '_') (alnum | '_')*;
 	terminator = [\n;];
 
@@ -85,6 +105,7 @@
 		terminator;
 
 	comment = '#' whitespace* (any - '\n')+ >mark whitespace* '\n';
+	command = word >mark %set_command (whitespace+ word)* terminator;
 
 	main := |*
 		assignment => {
@@ -108,6 +129,7 @@
 				fbreak;
 			}
 		};
+		command => notify_command;
 		[ \t\r\n];
 		0 => { scanner->done = 1; fbreak; };
 	*|;

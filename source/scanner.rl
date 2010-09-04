@@ -88,10 +88,29 @@
 		}
 	}
 
+	action set_str {
+		if(mark != NULL) {
+			str = malloc(sizeof(*str) * (fpc - mark + 1));
+			strncpy(str, mark, fpc - mark);
+			str[fpc - mark] = '\0';
+			mark = NULL;
+		}
+	}
+
+	action notify_function {
+		if(str != NULL && scanner->cb.function != NULL) {
+			scanner->cb.function(str, scanner->user_data);
+			free(str);
+			str = NULL;
+		}
+		fbreak;
+	}
+
 	whitespace = space - [\n];
 
 	word = ([./] | alnum)+;
 	name = (alpha | '_') (alnum | '_')*;
+	fname = name;
 	terminator = [\n;];
 
 	partial_string = '"' (extend - '"' | '\\' . extend - '"')* '"';
@@ -106,6 +125,7 @@
 
 	comment = '#' whitespace* (any - '\n')+ >mark whitespace* '\n';
 	command = word >mark %set_command (whitespace+ word)* terminator;
+	function = fname >mark %set_str '()';
 
 	main := |*
 		assignment => {
@@ -130,6 +150,7 @@
 			}
 		};
 		command => notify_command;
+		function => notify_function;
 		[ \t\r\n];
 		0 => { scanner->done = 1; fbreak; };
 	*|;

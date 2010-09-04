@@ -33,6 +33,7 @@ struct udata {
 	char *last_value;
 	char *last_comment;
 	char *last_command;
+	char *last_function;
 	char **last_command_args;
 };
 
@@ -81,6 +82,18 @@ void command_cb(char const *command, char const **command_args, void *data)
 		d->last_command = malloc(sizeof(*d->last_command) * strlen(command) + 1);
 		if(d->last_command != NULL) {
 			strcpy(d->last_command, command);
+		}
+	}
+}
+
+void function_cb(char const *name, void *data)
+{
+	struct udata *const d = data;
+	d->last_function = NULL;
+	if(name != NULL) {
+		d->last_function = malloc(sizeof(*d->last_function) * strlen(name) + 1);
+		if(d->last_function != NULL) {
+			strcpy(d->last_function, name);
 		}
 	}
 }
@@ -206,6 +219,24 @@ void test_command(struct sh_scanner_callbacks const *cb)
 	sh_scanner_release(&scnr);
 }
 
+void test_function(struct sh_scanner_callbacks const *cb)
+{
+	struct sh_scanner scnr;
+	struct udata data;
+
+	memset(&data, 0, sizeof(data));
+	data.input = "foo() { echo a; }\n";
+	sh_scanner_init(&scnr, cb, &data);
+
+	ok(sh_scan(&scnr) == sh_scan_in_progress,
+		"Given a function header, scanning should succeed", "");
+	ok(data.last_function && strcmp(data.last_function, "foo") == 0,
+		"Given a function header, the function name should be parsed", "");
+	free(data.last_command);
+
+	sh_scanner_release(&scnr);
+}
+
 int main()
 {
 	struct sh_scanner_callbacks cb;
@@ -215,6 +246,7 @@ int main()
 	cb.assign = assign_cb;
 	cb.comment = comment_cb;
 	cb.command = command_cb;
+	cb.function = function_cb;
 
 	plan_tests(NTESTS);
 
@@ -223,6 +255,7 @@ int main()
 	test_assign_string(&cb);
 	test_comment(&cb);
 	test_command(&cb);
+	test_function(&cb);
 
 	return exit_status();
 }

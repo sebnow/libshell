@@ -102,6 +102,12 @@ typedef void (*sh_comment_func)(char const*, void *);
  */
 typedef void (*sh_command_func)(char const*, char const**, void *);
 
+/** Callback function called when a function is being delcared.
+ * \param name Name of the function being declared.
+ * \param user_data User-specified data, set in sh_scanner_init().
+ */
+typedef void (*sh_function_func)(char const*, void *);
+
 /** \} */
 
 /** Conveniance structure containing all callbacks used by a scanner */
@@ -114,6 +120,8 @@ struct sh_scanner_callbacks {
 	sh_comment_func comment;
 	/** Callback function notifying of a command. */
 	sh_command_func command;
+	/** Callback function notifying of a function definition. */
+	sh_function_func function;
 };
 
 /** A structure containing the state of the scanner. */

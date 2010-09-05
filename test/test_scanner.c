@@ -232,7 +232,7 @@ void test_function(struct sh_scanner_callbacks const *cb)
 		"Given a function header, scanning should succeed", "");
 	ok(data.last_function && strcmp(data.last_function, "foo") == 0,
 		"Given a function header, the function name should be parsed", "");
-	free(data.last_command);
+	free(data.last_function);
 
 	sh_scanner_release(&scnr);
 }

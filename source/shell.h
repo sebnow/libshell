@@ -100,7 +100,7 @@ typedef void (*sh_comment_func)(char const*, void *);
  * \param args A NULL-terminated array of arguments.
  * \param user_data User-specified data, set in sh_scanner_init().
  */
-typedef void (*sh_command_func)(char const*, char const**, void *);
+typedef void (*sh_command_func)(char const*, char const* const*, void *);
 
 /** Callback function called when a function is being delcared.
  * \param name Name of the function being declared.

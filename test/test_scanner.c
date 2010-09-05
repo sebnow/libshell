@@ -73,16 +73,38 @@ void comment_cb(char const *comment, void *data)
 	}
 }
 
-void command_cb(char const *command, char const **command_args, void *data)
+void command_cb(char const *command, char const *const *command_args, void *data)
 {
 	struct udata *const d = data;
+	char const *const *iter;
+	char **d_iter;
 	d->last_command = NULL;
-	d->last_command_args = (char **)command_args;
-	if(command != NULL) {
-		d->last_command = malloc(sizeof(*d->last_command) * strlen(command) + 1);
-		if(d->last_command != NULL) {
-			strcpy(d->last_command, command);
+	if(command == NULL) {
+		return;
+	}
+	d->last_command = malloc(sizeof(*d->last_command) * strlen(command) + 1);
+	if(d->last_command != NULL) {
+		strcpy(d->last_command, command);
+	}
+	if(command_args != NULL) {
+		/* Forward to the end of the array so the length can be
+		 * determined. */
+		iter = command_args;
+		while(*iter != NULL) {
+			iter++;
+		};
+		d->last_command_args = malloc(sizeof(*d->last_command_args) * (iter - command_args + 1));
+		d_iter = d->last_command_args;
+		memset(d_iter, 0, sizeof(*d_iter));
+		/* Copy the array */
+		iter = command_args;
+		while(*iter != NULL) {
+			*d_iter = malloc(sizeof(**d_iter) * (strlen(*iter) + 1));
+			*d_iter = strcpy(*d_iter, *iter);
+			d_iter++;
+			iter++;
 		}
+		*d_iter = NULL;
 	}
 }
 
@@ -201,7 +223,6 @@ void test_command(struct sh_scanner_callbacks const *cb)
 		"Given a simple command, scanning should succeed", "");
 	ok(data.last_command && strcmp(data.last_command, "echo") == 0,
 		"Given a simple command, the content should be parsed", "");
-	todo_start("Not implemented");
 	args = data.last_command_args;
 	result = 0;
 	if(args != NULL) {
@@ -213,9 +234,14 @@ void test_command(struct sh_scanner_callbacks const *cb)
 		result = result && *args == NULL;
 	}
 	ok(result, "Given a simple command, the arguments should be parsed", "");
-	todo_end();
-	free(data.last_command);
 
+	free(data.last_command);
+	if(data.last_command_args != NULL) {
+		for(args = data.last_command_args; *args != NULL; args++) {
+			free(*args);
+		}
+		free(data.last_command_args);
+	}
 	sh_scanner_release(&scnr);
 }
 

@@ -123,7 +123,7 @@ static void notify_function(struct sh_scanner const* scanner, GSList **markers);
 		(assignment_value >mark %mpush_value)? terminator;
 
 	comment = '#' whitespace* (print - '\n')+ >mark %mpush '\n';
-	command = word >mark %mpush (whitespace+ word)* terminator;
+	command = word >mark %mpush (whitespace+ (word >mark %mpush))* terminator;
 	function = fname >mark %mpush '()';
 
 	main := |*
@@ -260,14 +260,50 @@ static void notify_comment(struct sh_scanner const* scanner, GSList **markers)
 
 static void notify_command(struct sh_scanner const* scanner, GSList **markers)
 {
-	GString *name;
-	name = g_slist_nth_data(*markers, 0);
-	*markers = g_slist_remove(*markers, name);
-	assert(name != NULL);
-	if(scanner->cb.command != NULL) {
-		scanner->cb.command(name->str, NULL, scanner->user_data);
+	char *name;
+	char **args = NULL;
+	char **iter = NULL;
+	GString *arg;
+	guint length;
+
+	length = g_slist_length(*markers);
+	assert(length != 0);
+
+	if(length > 1) {
+		/* Args list needs to be NULL terminated. The extra "name" element
+		 * gives the correct size. */
+		args = malloc(sizeof(*args) * g_slist_length(*markers));
+		iter = args;
+
+		arg = g_slist_nth_data(*markers, 0);
+		while(arg != NULL) {
+			*markers = g_slist_remove(*markers, arg);
+			*iter = arg->str;
+			g_string_free(arg, FALSE);
+			arg = g_slist_nth_data(*markers, 0);
+			iter++;
+		}
+		iter--; /* Rewind to the command name. */
+		name = *iter;
+		*iter = NULL;
+	} else {
+		arg = g_slist_nth_data(*markers, 0);
+		*markers = g_slist_remove(*markers, arg);
+		name = arg->str;
+		g_string_free(arg, FALSE);
 	}
-	g_string_free(name, TRUE);
+
+	if(scanner->cb.command != NULL) {
+		scanner->cb.command(name, (char const *const *)args, scanner->user_data);
+	}
+
+	if(args != NULL) {
+		for(iter = args; *iter != NULL; iter++) {
+			free(*iter);
+		}
+		free(args);
+	}
+	free(name);
 }
 
 static void notify_function(struct sh_scanner const* scanner, GSList **markers)

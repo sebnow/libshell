@@ -28,6 +28,45 @@
 
 #define SH_BUFFER_SIZE 4096
 
+/** Determine whether the scanner's input has been exhausted.
+ * \param scanner The scanner to be checked.
+ * \return True on success, false otherwise.
+ * */
+static int is_input_exhausted(struct sh_scanner const*);
+
+/** Call the assignment callback
+ * \pre The \c markers list must be populated with the name, and optionally value,
+ * strings.
+ * \remarks The \c markers pointer will be modified to point to the new list.
+ * \param scanner Scanner for which to call the callback.
+ * \param markers A stack of captured strings.
+ */
+static void notify_assignment(struct sh_scanner const* scanner, GSList **markers);
+
+/** Call the comment callback
+ * \pre The \c markers list must be populated with the comment string.
+ * \remarks The \c markers pointer will be modified to point to the new list.
+ * \param scanner Scanner for which to call the callback.
+ * \param markers Reference to a stack of captured strings.
+ */
+static void notify_comment(struct sh_scanner const* scanner, GSList **markers);
+
+/** Call the command callback
+ * \pre The \c markers list must be populated with the name, and any arguments.
+ * \remarks The \c markers pointer will be modified to point to the new list.
+ * \param scanner Scanner for which to call the callback.
+ * \param markers A stack of captured strings.
+ */
+static void notify_command(struct sh_scanner const* scanner, GSList **markers);
+
+/** Call the function callback
+ * \pre The \c markers list must be populated with the function name.
+ * \remarks The \c markers pointer will be modified to point to the new list.
+ * \param scanner Scanner for which to call the callback.
+ * \param markers A stack of captured strings.
+ */
+static void notify_function(struct sh_scanner const* scanner, GSList **markers);
+
 %%{
 	machine Shell;
 	access scanner->;
@@ -39,18 +78,16 @@
 
 	action mark { mark = fpc; }
 
-	action set_name {
+	action mpush {
 		if(mark != NULL) {
-			asmt_name = malloc(sizeof(*asmt_name) * (fpc - mark + 1));
-			strncpy(asmt_name, mark, fpc - mark);
-			asmt_name[fpc - mark] = '\0';
-			/* Default to a null/empty assignment */
-			asmt_value = NULL;
+			str = g_string_new_len(mark, fpc - mark + 1);
+			str->str[fpc - mark] = '\0';
+			markers = g_slist_prepend(markers, str);
 			mark = NULL;
 		}
 	}
 
-	action assign_value {
+	action mpush_value {
 		if(mark != NULL) {
 			/* Ignore quotes.
 			 * TODO: Different quotes will have to be interpreted
@@ -61,49 +98,12 @@
 				mark++;
 				mark_end--;
 			}
-			asmt_value = malloc(sizeof(*asmt_value) * (mark_end - mark + 1));
-			strncpy(asmt_value, mark, mark_end - mark);
-			asmt_value[mark_end - mark] = '\0';
+			str = g_string_new_len(mark, mark_end - mark + 1);
+			str->str[mark_end - mark] = '\0';
+			markers = g_slist_prepend(markers, str);
 			mark = NULL;
 			mark_end = NULL;
 		}
-	}
-
-	action set_command {
-		if(mark != NULL) {
-			str = malloc(sizeof(*str) * (fpc - mark + 1));
-			strncpy(str, mark, fpc - mark);
-			str[fpc - mark] = '\0';
-			mark = NULL;
-		}
-	}
-
-	action notify_command {
-		if(str != NULL && scanner->cb.command != NULL) {
-			scanner->cb.command(str, NULL, scanner->user_data);
-			free(str);
-			str = NULL;
-			mark = NULL;
-			fbreak;
-		}
-	}
-
-	action set_str {
-		if(mark != NULL) {
-			str = malloc(sizeof(*str) * (fpc - mark + 1));
-			strncpy(str, mark, fpc - mark);
-			str[fpc - mark] = '\0';
-			mark = NULL;
-		}
-	}
-
-	action notify_function {
-		if(str != NULL && scanner->cb.function != NULL) {
-			scanner->cb.function(str, scanner->user_data);
-			free(str);
-			str = NULL;
-		}
-		fbreak;
 	}
 
 	whitespace = space - [\n];
@@ -119,48 +119,22 @@
 
 	assignment_value = string | partial_string | unquoted_string;
 
-	assignment = name >mark %set_name '='
-		(assignment_value >mark %assign_value)?
-		terminator;
+	assignment = name >mark %mpush '='
+		(assignment_value >mark %mpush_value)? terminator;
 
-	comment = '#' whitespace* (any - '\n')+ >mark whitespace* '\n';
-	command = word >mark %set_command (whitespace+ word)* terminator;
-	function = fname >mark %set_str '()';
+	comment = '#' whitespace* (print - '\n')+ >mark %mpush '\n';
+	command = word >mark %mpush (whitespace+ word)* terminator;
+	function = fname >mark %mpush '()';
 
 	main := |*
-		assignment => {
-			if(scanner->cb.assign != NULL) {
-				scanner->cb.assign(asmt_name, asmt_value, scanner->user_data);
-			}
-			free(asmt_name);
-			free(asmt_value);
-			fbreak;
-		};
-		comment => {
-			if(mark != NULL && scanner->cb.comment != NULL) {
-				
-				str = malloc(sizeof(*str) * (fpc - mark + 1));
-				strncpy(str, mark, fpc - mark);
-				str[fpc - mark] = '\0';
-				scanner->cb.comment(str, scanner->user_data);
-				free(str);
-				str = NULL;
-				mark = NULL;
-				fbreak;
-			}
-		};
-		command => notify_command;
-		function => notify_function;
+		assignment => { notify_assignment(scanner, &markers); fbreak; };
+		comment => { notify_comment(scanner, &markers); fbreak; };
+		command => { notify_command(scanner, &markers); fbreak; };
+		function => { notify_function(scanner, &markers); fbreak; };
 		[ \t\r\n];
 		0 => { scanner->done = 1; fbreak; };
 	*|;
 }%%
-
-/** Determine whether the scanner's input has been exhausted.
- * \param scanner The scanner to be checked.
- * \return True on success, false otherwise.
- * */
-static int is_input_exhausted(struct sh_scanner const*);
 
 SH_SYMEXPORT
 int sh_scanner_init(struct sh_scanner *scanner,
@@ -188,12 +162,11 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 {
 	enum sh_scan_status status;
 	char *input = NULL;
-	char *asmt_name = NULL;
-	char *asmt_value = NULL;
 	char *mark = NULL;
 	char *mark_end = NULL;
-	char *str = NULL;
+	GString *str = NULL;
 	GString *const buf = scanner->buffer;
+	GSList *markers = NULL; /* Stack of captured strings */
 
 	assert(scanner);
 	assert(scanner->buffer);
@@ -241,5 +214,71 @@ void sh_scanner_release(struct sh_scanner *scanner) {
 static inline int is_input_exhausted(struct sh_scanner const *scanner)
 {
 	return scanner->p == scanner->pe;
+}
+
+static void notify_assignment(struct sh_scanner const* scanner, GSList **markers)
+{
+	GString *name;
+	GString *value;
+	char *value_str = NULL;
+	value = g_slist_nth_data(*markers, 0);
+	assert(value != NULL);
+	*markers = g_slist_remove(*markers, value);
+	name = g_slist_nth_data(*markers, 0);
+	/* Value can be NULL, in which case the value needs to be reassigned
+	 * to the name. */
+	if(name == NULL) {
+		name = value;
+		value = NULL;
+	} else {
+		*markers = g_slist_remove(*markers, name);
+		value_str = value->str;
+	}
+
+	assert(name != NULL);
+
+	if(scanner->cb.assign != NULL) {
+		scanner->cb.assign(name->str, value_str, scanner->user_data);
+	}
+	g_string_free(name, TRUE);
+	if(value != NULL) {
+		g_string_free(value, TRUE);
+	}
+}
+
+static void notify_comment(struct sh_scanner const* scanner, GSList **markers)
+{
+	GString *comment;
+	comment = g_slist_nth_data(*markers, 0);
+	assert(comment != NULL);
+	*markers = g_slist_remove(*markers, comment);
+	if(scanner->cb.comment != NULL) {
+		scanner->cb.comment(comment->str, scanner->user_data);
+	}
+	g_string_free(comment, TRUE);
+}
+
+static void notify_command(struct sh_scanner const* scanner, GSList **markers)
+{
+	GString *name;
+	name = g_slist_nth_data(*markers, 0);
+	*markers = g_slist_remove(*markers, name);
+	assert(name != NULL);
+	if(scanner->cb.command != NULL) {
+		scanner->cb.command(name->str, NULL, scanner->user_data);
+	}
+	g_string_free(name, TRUE);
+}
+
+static void notify_function(struct sh_scanner const* scanner, GSList **markers)
+{
+	GString *name;
+	name = g_slist_nth_data(*markers, 0);
+	*markers = g_slist_remove(*markers, name);
+	assert(name != NULL);
+	if(scanner->cb.function != NULL) {
+		scanner->cb.function(name->str, scanner->user_data);
+	}
+	g_string_free(name, TRUE);
 }
 

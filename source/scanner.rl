@@ -140,10 +140,11 @@ SH_SYMEXPORT
 int sh_scanner_init(struct sh_scanner *scanner,
 	struct sh_scanner_callbacks const *cb, void *ctx)
 {
-	if(scanner == NULL || cb == NULL) {
+	assert(scanner != NULL);
+	memset(scanner, 0, sizeof(*scanner));
+	if(cb == NULL) {
 		return 1;
 	}
-	memset(scanner, 0, sizeof(*scanner));
 	scanner->line = 1;
 	scanner->column = 1;
 	memcpy(&scanner->cb, cb, sizeof(*cb));
@@ -196,6 +197,7 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 		}
 	}
 	%% write exec;
+	g_slist_free(markers);
 	if(scanner->done) {
 		status = sh_scan_complete;
 	} else if(scanner->cs == Shell_error) {
@@ -209,6 +211,7 @@ enum sh_scan_status sh_scan(struct sh_scanner *scanner)
 SH_SYMEXPORT
 void sh_scanner_release(struct sh_scanner *scanner) {
 	g_string_free(scanner->buffer, TRUE);
+	scanner->buffer = NULL;
 }
 
 static inline int is_input_exhausted(struct sh_scanner const *scanner)

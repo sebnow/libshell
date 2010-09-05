@@ -25,7 +25,7 @@
 #include <tap.h>
 #include <shell.h>
 
-#define NTESTS 19
+#define NTESTS 21
 
 struct udata {
 	char *input;
